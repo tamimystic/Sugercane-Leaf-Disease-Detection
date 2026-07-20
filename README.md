@@ -3,7 +3,7 @@ title: Sugarcane Leaf Disease Detection
 emoji: 🌿
 colorFrom: green
 colorTo: yellow
-sdk: docker
+sdk: gradio
 app_file: app.py
 pinned: false
 ---

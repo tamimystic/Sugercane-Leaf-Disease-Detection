@@ -1,30 +1,74 @@
-from fastapi import FastAPI, File, UploadFile, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+import gradio as gr
+import base64
+from io import BytesIO
+from PIL import Image
 from src.pipeline.prediction_pipeline import PredictionPipeline
+import spaces
+import json
 
-app = FastAPI(title="Sugarcane Leaf Disease Classifier")
+# Initialize the pipeline
+pipeline = PredictionPipeline()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-# LIME configs
-ENABLE_LIME = True
-LIME_SAMPLES = 50 # Reduced for CPU speed on HF Spaces
-
-pipeline = PredictionPipeline(enable_lime=ENABLE_LIME, lime_samples=LIME_SAMPLES)
-
-@app.get("/", response_class=HTMLResponse)
-async def read_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-@app.post("/predict")
-async def predict_image(file: UploadFile = File(...)):
+@spaces.GPU
+def predict_gradio(img):
+    if img is None:
+        return None, None, None
+        
     try:
-        contents = await file.read()
-        result = pipeline.predict(contents)
-        return JSONResponse(content={"data": result, "status": "success"})
+        # Run the pipeline which expects a PIL Image
+        result = pipeline.predict_image(img)
+        
+        if result["status"] == "success":
+            # Format predictions for the Label component
+            confidences = {item["class"]: item["confidence"] for item in result["predictions"]}
+            
+            # Extract Grad-CAM Image
+            grad_cam_img = None
+            if result.get("grad_cam"):
+                grad_cam_data = base64.b64decode(result["grad_cam"])
+                grad_cam_img = Image.open(BytesIO(grad_cam_data))
+                
+            # Extract LIME Image
+            lime_img = None
+            if result.get("lime"):
+                lime_data = base64.b64decode(result["lime"])
+                lime_img = Image.open(BytesIO(lime_data))
+                
+            return confidences, grad_cam_img, lime_img
+        else:
+            return {"Error": 1.0}, None, None
+            
     except Exception as e:
-        return JSONResponse(content={"error": str(e), "status": "error"}, status_code=500)
+        return {f"Error: {str(e)}": 1.0}, None, None
 
+# Define the Gradio Interface
+with gr.Blocks(theme=gr.themes.Glass()) as demo:
+    gr.Markdown(
+        """
+        # 🌿 Sugarcane Leaf Disease Detection
+        Upload an image of a sugarcane leaf to instantly detect up to 15 different health conditions. 
+        The AI also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.
+        """
+    )
+    
+    with gr.Row():
+        with gr.Column():
+            img_input = gr.Image(type="pil", label="Upload Sugarcane Leaf Image")
+            submit_btn = gr.Button("Analyze Image", variant="primary")
+            
+        with gr.Column():
+            label_output = gr.Label(label="Prediction Confidence", num_top_classes=5)
+            
+    with gr.Row():
+        cam_output = gr.Image(label="Grad-CAM++ (Focus Area)")
+        lime_output = gr.Image(label="LIME (Boundary Analysis)")
+        
+    # Wire the button to the prediction function
+    submit_btn.click(
+        fn=predict_gradio,
+        inputs=img_input,
+        outputs=[label_output, cam_output, lime_output]
+    )
+
+if __name__ == "__main__":
+    demo.launch()
