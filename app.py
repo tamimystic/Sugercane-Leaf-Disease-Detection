@@ -12,7 +12,7 @@ pipeline = PredictionPipeline()
 @spaces.GPU(duration=15)
 def predict_gradio(img):
     if img is None:
-        return None, None, None
+        return None, None, None, None
         
     try:
         # Convert PIL Image to bytes
@@ -23,70 +23,201 @@ def predict_gradio(img):
         # Run the pipeline which expects bytes
         result = pipeline.predict(img_bytes)
         
-        # Format predictions for the Dataframe (exact float percentage)
-        confidences = [[item["class"], f"{item['confidence']:.4f}%"] for item in result["all_classes"]]
+        # 1. Format Top Prediction HTML
+        top_class = result["all_classes"][0]
+        top_pred_html = f"""
+        <div class="top-prediction-card">
+            <h3 class="top-pred-label">Primary Diagnosis</h3>
+            <h1 class="top-pred-name">{top_class['class']}</h1>
+            <div class="top-pred-conf">{top_class['confidence']:.2f}% Confidence</div>
+        </div>
+        """
         
-        # Extract Grad-CAM Image
+        # 2. Format remaining predictions Dataframe
+        other_confidences = [[item["class"], f"{item['confidence']:.4f}%"] for item in result["all_classes"][1:]]
+        
+        # 3. Extract Grad-CAM Image
         grad_cam_img = None
         if result["images"].get("grad_cam"):
             grad_cam_data = result["images"]["grad_cam"].split(",")[1]
             grad_cam_img = Image.open(BytesIO(base64.b64decode(grad_cam_data)))
             
-        # Extract LIME Image
+        # 4. Extract LIME Image
         lime_img = None
         if result["images"].get("lime"):
             lime_data = result["images"]["lime"].split(",")[1]
             lime_img = Image.open(BytesIO(base64.b64decode(lime_data)))
             
-        return confidences, grad_cam_img, lime_img
+        return top_pred_html, other_confidences, grad_cam_img, lime_img
             
     except Exception as e:
-        return {f"Error: {str(e)}": 1.0}, None, None
+        error_html = f"<div style='color:red; font-size:1.2rem;'>Error: {str(e)}</div>"
+        return error_html, None, None, None
 
-# Define a custom theme to make it look professional
-custom_theme = gr.themes.Soft(
-    primary_hue="emerald",
-    secondary_hue="blue",
-    neutral_hue="slate",
+# Base theme to remove default Gradio styles
+custom_theme = gr.themes.Base(
     font=[gr.themes.GoogleFont("Inter"), "sans-serif"]
 ).set(
-    body_background_fill="*neutral_50",
-    block_background_fill="white",
+    body_background_fill="transparent",
+    block_background_fill="rgba(255,255,255,0.03)",
     block_border_width="1px",
-    block_border_color="*neutral_200",
+    block_border_color="rgba(255,255,255,0.1)",
     block_radius="16px",
-    block_shadow="*shadow_drop_lg"
+    block_shadow="0 8px 15px rgba(0,0,0,0.2)"
 )
 
-# Custom CSS for animations and a more professional look
+# Deep Custom CSS for extreme premium animated UI
 css = """
-/* Fade in animation for the whole app */
+/* Core Dark Theme Background */
+body, .gradio-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    color: #f8fafc !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Base Animations */
 .gradio-container {
     animation: fadeIn 0.8s ease-in-out;
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Button hover effects */
-button.primary {
-    transition: all 0.3s ease !important;
+/* Header Typography */
+.header-title {
+    font-weight: 900 !important;
+    font-size: 3rem !important;
+    background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    line-height: 1.2;
 }
-button.primary:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3) !important;
+.header-desc {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    line-height: 1.6;
 }
 
-/* Image expansion and hover effects */
-.image-container img {
-    transition: transform 0.3s ease !important;
+/* Stunning Top Prediction Card */
+.top-prediction-card {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 24px;
+    padding: 2.5rem;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(16, 185, 129, 0.3);
+    margin-bottom: 2rem;
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+.top-pred-label {
+    font-size: 1.1rem;
+    color: #d1fae5;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+}
+.top-pred-name {
+    font-size: 3rem;
+    font-weight: 900;
+    color: white;
+    margin: 10px 0;
+    text-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    line-height: 1.1;
+}
+.top-pred-conf {
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: rgba(0,0,0,0.2);
+    padding: 8px 25px;
+    border-radius: 30px;
+    display: inline-block;
+    color: #f8fafc;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Image Containers & XAI */
+.xai-image {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    background: rgba(255,255,255,0.02) !important;
+}
+.xai-image img {
+    transition: transform 0.4s ease !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: contain !important;
 }
-.image-container:hover img {
-    transform: scale(1.01) !important;
+.xai-image:hover img {
+    transform: scale(1.04) !important;
+}
+
+/* Premium Buttons */
+button.primary {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-size: 1.3rem !important;
+    font-weight: bold !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+    transition: all 0.3s ease !important;
+}
+button.primary:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 25px rgba(59, 130, 246, 0.6) !important;
+}
+button.secondary {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #f8fafc !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    border-radius: 16px !important;
+    transition: all 0.3s ease !important;
+}
+button.secondary:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Dark Mode Dataframe & Accordion */
+table {
+    border-collapse: collapse !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    background: transparent !important;
+}
+th {
+    background: rgba(255,255,255,0.1) !important;
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+    border: none !important;
+}
+td {
+    background: rgba(255,255,255,0.03) !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    font-weight: 500 !important;
+}
+.accordion {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 16px !important;
+}
+.accordion > button {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
 }
 
 /* Footer styling */
@@ -94,71 +225,63 @@ button.primary:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 60px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
+    margin-top: 80px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255,255,255,0.1);
     width: 100%;
 }
 .footer {
-    color: #64748b;
-    font-size: 0.95rem;
+    color: #94a3b8;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
 }
 .footer a {
-    color: #059669;
+    color: #10b981;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
 }
 .footer a:hover {
     text-decoration: underline;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 """
 
-# Define the Gradio Interface
 with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as demo:
-    # Header Section
     with gr.Row():
         gr.Markdown(
             """
-            <div style="text-align: center; max-width: 800px; margin: 0 auto; padding: 20px 0;">
-                <h1 style="font-weight: 800; font-size: 2.5rem; color: #059669; margin-bottom: 0.5rem;">Sugarcane Leaf Disease Detection</h1>
-                <p style="font-size: 1.1rem; color: #475569;">Upload an image of a sugarcane leaf to instantly detect up to 15 different health conditions using Deep Learning. The system also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.</p>
+            <div style="text-align: center; max-width: 900px; margin: 0 auto; padding: 40px 0;">
+                <h1 class="header-title">Sugarcane Leaf Disease AI</h1>
+                <p class="header-desc">Upload an image of a sugarcane leaf to instantly detect health conditions using Deep Learning. The system also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.</p>
             </div>
             """
         )
     
-    # Main Content Section
-    with gr.Row():
-        
-        # Left Column: Input and Controls
-        with gr.Column(scale=1):
-            gr.Markdown("### 1. Upload Image")
-            img_input = gr.Image(type="pil", label="Sugarcane Leaf", sources=["upload", "webcam"], height=400, elem_classes="image-container")
+    with gr.Row(equal_height=True):
+        # Left Panel: Input
+        with gr.Column(scale=4):
+            img_input = gr.Image(type="pil", label="", show_label=False, sources=["upload", "webcam"], height=550, elem_classes="xai-image")
             
             with gr.Row():
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
                 submit_btn = gr.Button("Analyze Image", variant="primary")
                 
-        # Right Column: Results
-        with gr.Column(scale=2):
-            gr.Markdown("### 2. Analysis Results")
+        # Right Panel: Output
+        with gr.Column(scale=6):
+            top_pred_output = gr.HTML()
             
-            with gr.Tabs():
-                # Tab 1: AI Prediction
-                with gr.TabItem("Prediction"):
-                    label_output = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
-                
-                # Tab 2: Explainable AI
-                with gr.TabItem("Explainable AI (XAI)"):
-                    gr.Markdown("*These images show which parts of the leaf the model focused on to make its decision.*")
-                    with gr.Row():
-                        with gr.Column():
-                            gr.Markdown("#### Grad-CAM++ (Heatmap)")
-                            cam_output = gr.Image(show_label=False, interactive=False, elem_classes="image-container")
-                        with gr.Column():
-                            gr.Markdown("#### LIME (Boundary Analysis)")
-                            lime_output = gr.Image(show_label=False, interactive=False, elem_classes="image-container")
-    
-    # Footer Section
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
+                    cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image", height=300)
+                with gr.Column():
+                    gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
+                    lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image", height=300)
+            
+            with gr.Accordion("View All Other Possibilities", open=False):
+                other_preds = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
+
+    # Footer
     with gr.Row(elem_classes="footer-container"):
         gr.Markdown(
             """
@@ -169,13 +292,13 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         )
     
     # Wire the Clear Button to clear outputs as well
-    clear_btn.add([label_output, cam_output, lime_output])
+    clear_btn.add([top_pred_output, cam_output, lime_output, other_preds])
     
     # Wire the Analyze Button
     submit_btn.click(
         fn=predict_gradio,
         inputs=img_input,
-        outputs=[label_output, cam_output, lime_output]
+        outputs=[top_pred_output, other_preds, cam_output, lime_output]
     )
 
 if __name__ == "__main__":
