@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import gradio as gr
 import uvicorn
+import spaces
 from src.pipeline.prediction_pipeline import PredictionPipeline
 
 app = FastAPI(title="Sugarcane Leaf Disease Classifier")
@@ -30,12 +31,19 @@ async def predict_image(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(content={"error": str(e), "status": "error"}, status_code=500)
 
+@spaces.GPU
+def dummy_gpu_function():
+    return "GPU connected successfully!"
+
 # Dummy Gradio app to satisfy Hugging Face Gradio SDK requirements
 demo = gr.Blocks()
 with demo:
     gr.Markdown("Backend Server is running.")
+    btn = gr.Button("Check GPU Status")
+    out = gr.Textbox()
+    btn.click(fn=dummy_gpu_function, inputs=[], outputs=out)
 
 app = gr.mount_gradio_app(app, demo, path="/gradio")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
