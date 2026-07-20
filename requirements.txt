@@ -12,3 +12,4 @@ grad-cam==1.4.8
 lime==0.2.0.1
 scikit-image==0.21.0
 scikit-learn==1.3.0
+gradio
