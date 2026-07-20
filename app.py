@@ -145,21 +145,9 @@ body, .gradio-container {
 /* Image Containers & XAI */
 .xai-image {
     border-radius: 20px !important;
-    overflow: hidden !important;
     box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
     background: rgba(255,255,255,0.02) !important;
-    padding: 0 !important;
-}
-.xai-image img, .xai-image .image-container img {
-    transition: transform 0.4s ease !important;
-    width: 100% !important;
-    height: auto !important;
-    max-height: 600px !important;
-    object-fit: contain !important;
-}
-.xai-image:hover img, .xai-image .image-container:hover img {
-    transform: scale(1.03) !important;
 }
 
 /* Premium Buttons */
@@ -224,27 +212,7 @@ td {
 
 /* Footer styling */
 .footer-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 80px;
-    padding-top: 30px;
-    border-top: 1px solid rgba(255,255,255,0.1);
     width: 100%;
-}
-.footer {
-    color: #94a3b8;
-    font-size: 1rem;
-    letter-spacing: 0.5px;
-}
-.footer a {
-    color: #10b981;
-    text-decoration: none;
-    font-weight: 700;
-}
-.footer a:hover {
-    text-decoration: underline;
-    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 """
 
@@ -285,11 +253,11 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
 
     # Footer
-    with gr.Row(elem_classes="footer-container"):
-        gr.Markdown(
+    with gr.Row():
+        gr.HTML(
             """
-            <div class="footer">
-                Powered by <a href="https://www.linkedin.com/in/tamimystic" target="_blank">tamimystic</a>
+            <div style="text-align: center; width: 100%; margin-top: 50px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 1rem; letter-spacing: 0.5px;">
+                Powered by <a href="https://www.linkedin.com/in/tamimystic" target="_blank" style="color: #10b981; font-weight: 700; text-decoration: none;">tamimystic</a>
             </div>
             """
         )
