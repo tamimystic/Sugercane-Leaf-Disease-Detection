@@ -221,7 +221,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         gr.Markdown(
             """
             <div style="text-align: center; max-width: 900px; margin: 0 auto; padding: 40px 0;">
-                <h1 class="header-title">Sugarcane Leaf Disease AI</h1>
+                <h1 class="header-title">Sugarcane Leaf Disease Detection</h1>
                 <p class="header-desc">Upload an image of a sugarcane leaf to instantly detect health conditions using Deep Learning. The system also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.</p>
             </div>
             """
@@ -231,6 +231,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         # Left Panel: Input
         with gr.Column(scale=4):
             img_input = gr.Image(type="pil", label="", show_label=False, sources=["upload", "webcam"], height=550, elem_classes="xai-image")
+            gr.Markdown("<p style='text-align:center; font-size:0.9rem; color:#94a3b8; margin-top:5px;'>📱 <i>Mobile users: To use your back camera, click <b>Upload</b> and select Camera.</i></p>")
             
             with gr.Row():
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
@@ -244,6 +245,9 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             other_preds = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
 
     # Bottom Row: XAI Images
+    with gr.Row():
+        gr.Markdown("<h2 style='text-align:center; width:100%; color:#10b981; margin-top: 20px; font-weight:800;'>Visual Explanation: Why did the model make this prediction?</h2>")
+    
     with gr.Row():
         with gr.Column():
             gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
