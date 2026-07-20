@@ -23,8 +23,8 @@ def predict_gradio(img):
         # Run the pipeline which expects bytes
         result = pipeline.predict(img_bytes)
         
-        # Format predictions for the Label component (Gradio expects 0-1)
-        confidences = {item["class"]: item["confidence"] / 100.0 for item in result["all_classes"]}
+        # Format predictions for the Dataframe (exact float percentage)
+        confidences = [[item["class"], f"{item['confidence']:.4f}%"] for item in result["all_classes"]]
         
         # Extract Grad-CAM Image
         grad_cam_img = None
@@ -78,22 +78,30 @@ button.primary:hover {
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3) !important;
 }
 
-/* Image hover effects */
+/* Image expansion and hover effects */
 .image-container img {
     transition: transform 0.3s ease !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
 }
 .image-container:hover img {
-    transform: scale(1.02) !important;
+    transform: scale(1.01) !important;
 }
 
 /* Footer styling */
-.footer {
-    text-align: center;
-    margin-top: 40px;
+.footer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 60px;
     padding-top: 20px;
     border-top: 1px solid #e2e8f0;
+    width: 100%;
+}
+.footer {
     color: #64748b;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 .footer a {
     color: #059669;
@@ -124,7 +132,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         # Left Column: Input and Controls
         with gr.Column(scale=1):
             gr.Markdown("### 1. Upload Image")
-            img_input = gr.Image(type="pil", label="Sugarcane Leaf", height=400, elem_classes="image-container")
+            img_input = gr.Image(type="pil", label="Sugarcane Leaf", sources=["upload", "webcam"], height=400, elem_classes="image-container")
             
             with gr.Row():
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
@@ -137,17 +145,21 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             with gr.Tabs():
                 # Tab 1: AI Prediction
                 with gr.TabItem("Prediction"):
-                    label_output = gr.Label(label="Detection Confidence (All 15 Classes)", num_top_classes=15)
+                    label_output = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
                 
                 # Tab 2: Explainable AI
                 with gr.TabItem("Explainable AI (XAI)"):
                     gr.Markdown("*These images show which parts of the leaf the model focused on to make its decision.*")
                     with gr.Row():
-                        cam_output = gr.Image(label="Grad-CAM++ (Heatmap)", interactive=False, elem_classes="image-container")
-                        lime_output = gr.Image(label="LIME (Boundary Analysis)", interactive=False, elem_classes="image-container")
+                        with gr.Column():
+                            gr.Markdown("#### Grad-CAM++ (Heatmap)")
+                            cam_output = gr.Image(show_label=False, interactive=False, elem_classes="image-container")
+                        with gr.Column():
+                            gr.Markdown("#### LIME (Boundary Analysis)")
+                            lime_output = gr.Image(show_label=False, interactive=False, elem_classes="image-container")
     
     # Footer Section
-    with gr.Row():
+    with gr.Row(elem_classes="footer-container"):
         gr.Markdown(
             """
             <div class="footer">
