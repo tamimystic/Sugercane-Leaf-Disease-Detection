@@ -15,28 +15,30 @@ def predict_gradio(img):
         return None, None, None
         
     try:
-        # Run the pipeline which expects a PIL Image
-        result = pipeline.predict_image(img)
+        # Convert PIL Image to bytes
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG")
+        img_bytes = buffer.getvalue()
+
+        # Run the pipeline which expects bytes
+        result = pipeline.predict(img_bytes)
         
-        if result["status"] == "success":
-            # Format predictions for the Label component
-            confidences = {item["class"]: item["confidence"] for item in result["predictions"]}
+        # Format predictions for the Label component (Gradio expects 0-1)
+        confidences = {item["class"]: item["confidence"] / 100.0 for item in result["all_classes"]}
+        
+        # Extract Grad-CAM Image
+        grad_cam_img = None
+        if result["images"].get("grad_cam"):
+            grad_cam_data = result["images"]["grad_cam"].split(",")[1]
+            grad_cam_img = Image.open(BytesIO(base64.b64decode(grad_cam_data)))
             
-            # Extract Grad-CAM Image
-            grad_cam_img = None
-            if result.get("grad_cam"):
-                grad_cam_data = base64.b64decode(result["grad_cam"])
-                grad_cam_img = Image.open(BytesIO(grad_cam_data))
-                
-            # Extract LIME Image
-            lime_img = None
-            if result.get("lime"):
-                lime_data = base64.b64decode(result["lime"])
-                lime_img = Image.open(BytesIO(lime_data))
-                
-            return confidences, grad_cam_img, lime_img
-        else:
-            return {"Error": 1.0}, None, None
+        # Extract LIME Image
+        lime_img = None
+        if result["images"].get("lime"):
+            lime_data = result["images"]["lime"].split(",")[1]
+            lime_img = Image.open(BytesIO(base64.b64decode(lime_data)))
+            
+        return confidences, grad_cam_img, lime_img
             
     except Exception as e:
         return {f"Error: {str(e)}": 1.0}, None, None
