@@ -43,29 +43,67 @@ def predict_gradio(img):
     except Exception as e:
         return {f"Error: {str(e)}": 1.0}, None, None
 
+# Define a custom theme to make it look professional
+custom_theme = gr.themes.Soft(
+    primary_hue="emerald",
+    secondary_hue="blue",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont("Inter"), "sans-serif"]
+).set(
+    body_background_fill="*neutral_50",
+    block_background_fill="white",
+    block_border_width="1px",
+    block_border_color="*neutral_200",
+    block_radius="16px",
+    block_shadow="*shadow_drop_lg"
+)
+
 # Define the Gradio Interface
-with gr.Blocks(theme=gr.themes.Glass()) as demo:
-    gr.Markdown(
-        """
-        # 🌿 Sugarcane Leaf Disease Detection
-        Upload an image of a sugarcane leaf to instantly detect up to 15 different health conditions. 
-        The AI also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.
-        """
-    )
+with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI") as demo:
+    # Header Section
+    with gr.Row():
+        gr.Markdown(
+            """
+            <div style="text-align: center; max-width: 800px; margin: 0 auto; padding: 20px 0;">
+                <h1 style="font-weight: 800; font-size: 2.5rem; color: #059669; margin-bottom: 0.5rem;">🌿 Sugarcane Leaf Disease AI</h1>
+                <p style="font-size: 1.1rem; color: #475569;">Upload an image of a sugarcane leaf to instantly detect up to 15 different health conditions using Deep Learning. The AI also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.</p>
+            </div>
+            """
+        )
     
+    # Main Content Section
     with gr.Row():
-        with gr.Column():
-            img_input = gr.Image(type="pil", label="Upload Sugarcane Leaf Image")
-            submit_btn = gr.Button("Analyze Image", variant="primary")
-            
-        with gr.Column():
-            label_output = gr.Label(label="Prediction Confidence", num_top_classes=5)
-            
-    with gr.Row():
-        cam_output = gr.Image(label="Grad-CAM++ (Focus Area)")
-        lime_output = gr.Image(label="LIME (Boundary Analysis)")
         
-    # Wire the button to the prediction function
+        # Left Column: Input and Controls
+        with gr.Column(scale=1):
+            gr.Markdown("### 1. Upload Image")
+            img_input = gr.Image(type="pil", label="Sugarcane Leaf", height=400)
+            
+            with gr.Row():
+                clear_btn = gr.ClearButton(value="🔄 Reset", components=[img_input], variant="secondary")
+                submit_btn = gr.Button("🔍 Analyze Image", variant="primary")
+                
+        # Right Column: Results
+        with gr.Column(scale=2):
+            gr.Markdown("### 2. Analysis Results")
+            
+            with gr.Tabs():
+                # Tab 1: AI Prediction
+                with gr.TabItem("📊 AI Prediction"):
+                    # Showing all 15 classes as requested
+                    label_output = gr.Label(label="Detection Confidence (All 15 Classes)", num_top_classes=15)
+                
+                # Tab 2: Explainable AI
+                with gr.TabItem("🧠 Explainable AI (XAI)"):
+                    gr.Markdown("*These images show which parts of the leaf the AI looked at to make its decision.*")
+                    with gr.Row():
+                        cam_output = gr.Image(label="Grad-CAM++ (Heatmap)", interactive=False)
+                        lime_output = gr.Image(label="LIME (Boundary Analysis)", interactive=False)
+    
+    # Wire the Clear Button to clear outputs as well
+    clear_btn.add([label_output, cam_output, lime_output])
+    
+    # Wire the Analyze Button
     submit_btn.click(
         fn=predict_gradio,
         inputs=img_input,
