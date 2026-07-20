@@ -149,15 +149,17 @@ body, .gradio-container {
     box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
     background: rgba(255,255,255,0.02) !important;
+    padding: 0 !important;
 }
-.xai-image img {
+.xai-image img, .xai-image .image-container img {
     transition: transform 0.4s ease !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
+    max-height: 600px !important;
     object-fit: contain !important;
 }
-.xai-image:hover img {
-    transform: scale(1.04) !important;
+.xai-image:hover img, .xai-image .image-container:hover img {
+    transform: scale(1.03) !important;
 }
 
 /* Premium Buttons */
@@ -270,16 +272,17 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         with gr.Column(scale=6):
             top_pred_output = gr.HTML()
             
-            with gr.Row():
-                with gr.Column():
-                    gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
-                    cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image", height=300)
-                with gr.Column():
-                    gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
-                    lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image", height=300)
-            
-            with gr.Accordion("View All Other Possibilities", open=False):
-                other_preds = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
+            # Show all other possibilities directly below without accordion
+            other_preds = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
+
+    # Bottom Row: XAI Images
+    with gr.Row():
+        with gr.Column():
+            gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
+            cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
+        with gr.Column():
+            gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
+            lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
 
     # Footer
     with gr.Row(elem_classes="footer-container"):
