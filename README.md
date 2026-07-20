@@ -1,3 +1,13 @@
+---
+title: Sugarcane Leaf Disease Detection
+emoji: 🌿
+colorFrom: green
+colorTo: yellow
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
 # Sugarcane Leaf Disease Detection
 
 This project is a deep learning-based diagnostic application for identifying sugarcane leaf diseases. Built with PyTorch and FastAPI, it classifies 15 different leaf conditions and provides transparent results using Explainable AI (XAI) techniques.
