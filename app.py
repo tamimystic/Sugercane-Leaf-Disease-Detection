@@ -142,6 +142,49 @@ body, .gradio-container {
     border: 1px solid rgba(255,255,255,0.15);
 }
 
+/* Make internal image component buttons larger and clearer */
+.image-container button[aria-label="Upload"]::after,
+.image-container button[aria-label="upload"]::after {
+    content: " Upload Image";
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+.image-container button[aria-label="Webcam"]::after,
+.image-container button[aria-label="webcam"]::after,
+.image-container button[aria-label="Camera"]::after,
+.image-container button[aria-label="camera"]::after {
+    content: " Open Camera";
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+.image-container button[aria-label="Upload"],
+.image-container button[aria-label="upload"],
+.image-container button[aria-label="Webcam"],
+.image-container button[aria-label="webcam"],
+.image-container button[aria-label="Camera"],
+.image-container button[aria-label="camera"] {
+    background: rgba(255,255,255,0.05) !important;
+    padding: 12px 24px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    margin: 0 10px !important;
+    transition: all 0.3s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.image-container button[aria-label="Upload"]:hover,
+.image-container button[aria-label="upload"]:hover,
+.image-container button[aria-label="Webcam"]:hover,
+.image-container button[aria-label="webcam"]:hover,
+.image-container button[aria-label="Camera"]:hover,
+.image-container button[aria-label="camera"]:hover {
+    background: rgba(255,255,255,0.15) !important;
+    transform: translateY(-2px);
+}
+
 /* Image Containers & XAI */
 .xai-image {
     border-radius: 20px !important;
@@ -230,8 +273,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
     with gr.Row(equal_height=True):
         # Left Panel: Input
         with gr.Column(scale=4):
-            img_input = gr.Image(type="pil", label="", show_label=False, sources=["upload", "webcam"], height=550, elem_classes="xai-image")
-            gr.Markdown("<p style='text-align:center; font-size:0.9rem; color:#94a3b8; margin-top:5px;'>📱 <i>Mobile users: To use your back camera, click <b>Upload</b> and select Camera.</i></p>")
+            img_input = gr.Image(type="pil", label="", show_label=False, sources=["upload", "webcam"], height=550, elem_classes="xai-image image-container")
             
             with gr.Row():
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
