@@ -11,15 +11,12 @@ from src.logger import logging
 from src.utils.common import image_to_base64
 
 class XAIGenerator:
-    def __init__(self, model, device, preprocessor, enable_lime=True, lime_samples=150):
+    def __init__(self, model, device, preprocessor, lime_samples=40):
         self.model = model
         self.device = device
         self.preprocessor = preprocessor
-        self.enable_lime = enable_lime
         self.lime_samples = lime_samples
-        
-        if self.enable_lime:
-            self.lime_explainer = lime_image.LimeImageExplainer()
+        self.lime_explainer = lime_image.LimeImageExplainer()
             
     def generate_gradcam(self, tensor, original_img):
         try:
@@ -42,8 +39,8 @@ class XAIGenerator:
                 all_preds.append(preds)
         return np.vstack(all_preds)
 
-    def generate_lime(self, original_img):
-        if not self.enable_lime:
+    def generate_lime(self, original_img, enable=False):
+        if not enable:
             return None
             
         try:

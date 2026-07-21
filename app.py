@@ -10,9 +10,9 @@ import json
 pipeline = PredictionPipeline(lime_samples=40)
 
 @spaces.GPU(duration=15)
-def predict_gradio(img):
+def predict_gradio(img, enable_lime):
     if img is None:
-        return None, None, None, None
+        return None, None, None, gr.update(visible=False), None
         
     try:
         # Convert PIL Image to bytes
@@ -21,7 +21,7 @@ def predict_gradio(img):
         img_bytes = buffer.getvalue()
 
         # Run the pipeline which expects bytes
-        result = pipeline.predict(img_bytes)
+        result = pipeline.predict(img_bytes, enable_lime=enable_lime)
         
         # 1. Format Top Prediction HTML
         top_class = result["all_classes"][0]
@@ -44,15 +44,16 @@ def predict_gradio(img):
             
         # 4. Extract LIME Image
         lime_img = None
-        if result["images"].get("lime"):
+        if enable_lime and result["images"].get("lime"):
             lime_data = result["images"]["lime"].split(",")[1]
             lime_img = Image.open(BytesIO(base64.b64decode(lime_data)))
+            return top_pred_html, other_confidences, grad_cam_img, gr.update(visible=True), lime_img
             
-        return top_pred_html, other_confidences, grad_cam_img, lime_img
+        return top_pred_html, other_confidences, grad_cam_img, gr.update(visible=False), None
             
     except Exception as e:
         error_html = f"<div style='color:red; font-size:1.2rem;'>Error: {str(e)}</div>"
-        return error_html, None, None, None
+        return error_html, None, None, gr.update(visible=False), None
 
 # Base theme to remove default Gradio styles
 custom_theme = gr.themes.Base(
@@ -192,6 +193,13 @@ body, .gradio-container {
     border: 1px solid rgba(255,255,255,0.1) !important;
     background: rgba(255,255,255,0.02) !important;
 }
+.lime-checkbox {
+    margin-top: 15px !important;
+    background: rgba(255,255,255,0.05) !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
 
 /* Premium Buttons */
 button.primary {
@@ -278,6 +286,8 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             with gr.Row():
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
                 submit_btn = gr.Button("Analyze Image", variant="primary")
+            
+            enable_lime_checkbox = gr.Checkbox(label="Enable LIME Analysis (Slower, requires more GPU)", value=False, elem_classes="lime-checkbox")
                 
         # Right Panel: Output
         with gr.Column(scale=6):
@@ -294,7 +304,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
         with gr.Column():
             gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
             cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
-        with gr.Column():
+        with gr.Column(visible=False) as lime_col:
             gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
             lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
 
@@ -314,8 +324,8 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
     # Wire the Analyze Button
     submit_btn.click(
         fn=predict_gradio,
-        inputs=img_input,
-        outputs=[top_pred_output, other_preds, cam_output, lime_output]
+        inputs=[img_input, enable_lime_checkbox],
+        outputs=[top_pred_output, other_preds, cam_output, lime_col, lime_output]
     )
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ from src.logger import logging
 from src.utils.common import image_to_base64
 
 class PredictionPipeline:
-    def __init__(self, enable_lime=True, lime_samples=150):
+    def __init__(self, lime_samples=40):
         self.config = PredictionConfig()
         
         # Initialize components
@@ -27,11 +27,10 @@ class PredictionPipeline:
             model=self.model,
             device=self.device,
             preprocessor=self.preprocessor,
-            enable_lime=enable_lime,
             lime_samples=lime_samples
         )
 
-    def predict(self, image_bytes: bytes) -> dict:
+    def predict(self, image_bytes: bytes, enable_lime: bool = False) -> dict:
         try:
             logging.info("Starting prediction pipeline")
             
@@ -51,7 +50,7 @@ class PredictionPipeline:
             
             # Generate XAI Visualizations
             grad_cam_b64 = self.xai_generator.generate_gradcam(tensor, original_img)
-            lime_b64 = self.xai_generator.generate_lime(original_img)
+            lime_b64 = self.xai_generator.generate_lime(original_img, enable=enable_lime)
             original_b64 = image_to_base64(original_img.astype(np.float32) / 255.0)
             
             result = {
