@@ -7,7 +7,7 @@ import spaces
 import json
 
 # Initialize the pipeline with heavily optimized LIME samples to save GPU quota
-pipeline = PredictionPipeline(lime_samples=40)
+pipeline = PredictionPipeline(lime_samples=100)
 
 @spaces.GPU(duration=15)
 def predict_gradio(img, enable_lime):
@@ -279,7 +279,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             """
             <div style="text-align: center; max-width: 900px; margin: 0 auto; padding: 40px 0;">
                 <h1 class="header-title">Sugarcane Leaf Disease Detection</h1>
-                <p class="header-desc">Upload an image of a sugarcane leaf to instantly detect health conditions using Deep Learning. The system also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision.</p>
+                <p class="header-desc">Upload an image of a sugarcane leaf to instantly detect health conditions using Deep Learning. The system also provides Explainable AI (XAI) visuals like Grad-CAM++ and LIME to show exactly why it made its decision. <br><br><span style="color: #fbbf24; font-size: 1rem; font-weight: 600;">(Note: Please ensure you have created an account and are logged into Hugging Face to use this application without limits.)</span></p>
             </div>
             """
         )
