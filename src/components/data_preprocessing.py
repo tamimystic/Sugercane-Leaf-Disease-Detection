@@ -25,18 +25,18 @@ class DataPreprocessor:
                 raise ValueError("Could not decode image.")
             
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            h, w = img.shape[:2]
-            c = min(h, w)
-            y, x = (h - c) // 2, (w - c) // 2
             
-            img_cropped = img[y:y+c, x:x+c]
-            img_resized = cv2.resize(img_cropped, (self.config.image_size, self.config.image_size), interpolation=cv2.INTER_CUBIC)
+            # Save original shape for resizing XAI overlays later
+            original_shape = img.shape[:2] # (h, w)
+            
+            # Resize directly without cropping to preserve the entire leaf
+            img_resized = cv2.resize(img, (self.config.image_size, self.config.image_size), interpolation=cv2.INTER_CUBIC)
             
             tensor = self.val_transform(image=img_resized)["image"]
             tensor = tensor.unsqueeze(0)
             
             logging.info("Image preprocessing completed successfully")
-            return tensor, img_resized
+            return tensor, img_resized, original_shape
             
         except Exception as e:
             logging.error(f"Error in image preprocessing: {str(e)}")

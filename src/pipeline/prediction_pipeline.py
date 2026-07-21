@@ -35,7 +35,7 @@ class PredictionPipeline:
             logging.info("Starting prediction pipeline")
             
             # Data Preprocessing
-            tensor, original_img = self.preprocessor.preprocess_image(image_bytes)
+            tensor, original_img, original_shape = self.preprocessor.preprocess_image(image_bytes)
             tensor = tensor.to(self.device)
             
             # Inference
@@ -49,8 +49,8 @@ class PredictionPipeline:
             predicted_class = all_classes[0]["class"]
             
             # Generate XAI Visualizations
-            grad_cam_b64 = self.xai_generator.generate_gradcam(tensor, original_img)
-            lime_b64 = self.xai_generator.generate_lime(original_img, enable=enable_lime)
+            grad_cam_b64 = self.xai_generator.generate_gradcam(tensor, original_img, original_shape)
+            lime_b64 = self.xai_generator.generate_lime(original_img, original_shape, enable=enable_lime)
             original_b64 = image_to_base64(original_img.astype(np.float32) / 255.0)
             
             result = {

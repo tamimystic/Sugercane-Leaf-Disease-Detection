@@ -9,6 +9,7 @@ from skimage.segmentation import mark_boundaries
 from src.exception import CustomException
 from src.logger import logging
 from src.utils.common import image_to_base64
+import cv2
 
 class XAIGenerator:
     def __init__(self, model, device, preprocessor, lime_samples=40):
@@ -18,12 +19,21 @@ class XAIGenerator:
         self.lime_samples = lime_samples
         self.lime_explainer = lime_image.LimeImageExplainer()
             
-    def generate_gradcam(self, tensor, original_img):
+    def generate_gradcam(self, tensor, original_img, original_shape=None):
         try:
             logging.info("Generating Grad-CAM++")
             cam = GradCAMPlusPlus(model=self.model, target_layers=[self.model.densenet.features])
             grayscale_cam = cam(input_tensor=tensor, targets=None)[0, :]
             grad_cam_img = show_cam_on_image(original_img.astype(np.float32) / 255.0, grayscale_cam, use_rgb=True)
+            
+            # grad_cam_img is uint8 [0, 255]. Convert to float [0, 1] for image_to_base64
+            grad_cam_img = grad_cam_img.astype(np.float32) / 255.0
+            
+            # Restore to original aspect ratio
+            if original_shape is not None:
+                h, w = original_shape
+                grad_cam_img = cv2.resize(grad_cam_img, (w, h), interpolation=cv2.INTER_CUBIC)
+                
             return image_to_base64(grad_cam_img)
         except Exception as e:
             raise CustomException(e, sys)
@@ -39,7 +49,7 @@ class XAIGenerator:
                 all_preds.append(preds)
         return np.vstack(all_preds)
 
-    def generate_lime(self, original_img, enable=False):
+    def generate_lime(self, original_img, original_shape=None, enable=False):
         if not enable:
             return None
             
@@ -60,6 +70,13 @@ class XAIGenerator:
                 hide_rest=False
             )
             lime_img = mark_boundaries(temp / 255.0, mask)
+            
+            # lime_img is float64 [0, 1].
+            # Restore to original aspect ratio
+            if original_shape is not None:
+                h, w = original_shape
+                lime_img = cv2.resize(lime_img.astype(np.float32), (w, h), interpolation=cv2.INTER_CUBIC)
+                
             return image_to_base64(lime_img)
         except Exception as e:
             raise CustomException(e, sys)
