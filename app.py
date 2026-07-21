@@ -12,7 +12,7 @@ pipeline = PredictionPipeline(lime_samples=40)
 @spaces.GPU(duration=15)
 def predict_gradio(img, enable_lime):
     if img is None:
-        return None, None, None, gr.update(visible=False), None
+        return None, None, gr.update(visible=False), None, gr.update(visible=False), None
         
     try:
         # Convert PIL Image to bytes
@@ -47,13 +47,13 @@ def predict_gradio(img, enable_lime):
         if enable_lime and result["images"].get("lime"):
             lime_data = result["images"]["lime"].split(",")[1]
             lime_img = Image.open(BytesIO(base64.b64decode(lime_data)))
-            return top_pred_html, other_confidences, grad_cam_img, gr.update(visible=True), lime_img
+            return top_pred_html, other_confidences, gr.update(visible=True), grad_cam_img, gr.update(visible=True), lime_img
             
-        return top_pred_html, other_confidences, grad_cam_img, gr.update(visible=False), None
+        return top_pred_html, other_confidences, gr.update(visible=True), grad_cam_img, gr.update(visible=False), None
             
     except Exception as e:
         error_html = f"<div style='color:red; font-size:1.2rem;'>Error: {str(e)}</div>"
-        return error_html, None, None, gr.update(visible=False), None
+        return error_html, None, gr.update(visible=False), None, gr.update(visible=False), None
 
 # Base theme to remove default Gradio styles
 custom_theme = gr.themes.Base(
@@ -103,14 +103,16 @@ body, .gradio-container {
 
 /* Stunning Top Prediction Card */
 .top-prediction-card {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.8) 0%, rgba(5, 150, 105, 0.8) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: 24px;
     padding: 2.5rem;
     text-align: center;
-    box-shadow: 0 15px 35px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(255,255,255,0.1);
     margin-bottom: 2rem;
     animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
 }
 @keyframes popIn {
     from { opacity: 0; transform: scale(0.9); }
@@ -166,7 +168,8 @@ body, .gradio-container {
 .image-container button[aria-label="webcam"],
 .image-container button[aria-label="Camera"],
 .image-container button[aria-label="camera"] {
-    background: rgba(255,255,255,0.05) !important;
+    background: rgba(255,255,255,0.08) !important;
+    backdrop-filter: blur(10px) !important;
     padding: 12px 24px !important;
     border-radius: 12px !important;
     border: 1px solid rgba(255,255,255,0.2) !important;
@@ -175,6 +178,7 @@ body, .gradio-container {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 1px 5px rgba(255,255,255,0.1) !important;
 }
 .image-container button[aria-label="Upload"]:hover,
 .image-container button[aria-label="upload"]:hover,
@@ -189,9 +193,10 @@ body, .gradio-container {
 /* Image Containers & XAI */
 .xai-image {
     border-radius: 20px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    background: rgba(255,255,255,0.02) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 10px rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.03) !important;
+    backdrop-filter: blur(12px) !important;
 }
 .lime-checkbox {
     margin-top: 15px !important;
@@ -203,14 +208,15 @@ body, .gradio-container {
 
 /* Premium Buttons */
 button.primary {
-    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
-    border: none !important;
+    background: linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(37,99,235,0.9) 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
     color: white !important;
     font-size: 1.3rem !important;
     font-weight: bold !important;
     padding: 18px !important;
     border-radius: 16px !important;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4), inset 0 2px 10px rgba(255,255,255,0.2) !important;
     transition: all 0.3s ease !important;
 }
 button.primary:hover {
@@ -287,7 +293,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
                 clear_btn = gr.ClearButton(value="Reset", components=[img_input], variant="secondary")
                 submit_btn = gr.Button("Analyze Image", variant="primary")
             
-            enable_lime_checkbox = gr.Checkbox(label="Enable LIME Analysis (Slower, requires more GPU)", value=False, elem_classes="lime-checkbox")
+            enable_lime_checkbox = gr.Checkbox(label="Enable LIME Analysis (It will be slower)", value=False, elem_classes="lime-checkbox")
                 
         # Right Panel: Output
         with gr.Column(scale=6):
@@ -296,17 +302,18 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
             # Show all other possibilities directly below without accordion
             other_preds = gr.Dataframe(headers=["Condition", "Confidence"], interactive=False)
 
-    # Bottom Row: XAI Images
-    with gr.Row():
-        gr.Markdown("<h2 style='text-align:center; width:100%; color:#10b981; margin-top: 20px; font-weight:800;'>Visual Explanation: Why did the model make this prediction?</h2>")
-    
-    with gr.Row():
-        with gr.Column():
-            gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
-            cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
-        with gr.Column(visible=False) as lime_col:
-            gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
-            lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
+    # Bottom Row: XAI Images (Hidden initially)
+    with gr.Column(visible=False) as xai_section:
+        with gr.Row():
+            gr.Markdown("<h2 style='text-align:center; width:100%; color:#10b981; margin-top: 20px; font-weight:800;'>Visual Explanation: Why did the model make this prediction?</h2>")
+        
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>Grad-CAM++ (Heatmap)</h3>")
+                cam_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
+            with gr.Column(visible=False) as lime_col:
+                gr.Markdown("<h3 style='text-align:center; color:#94a3b8; font-weight:700;'>LIME (Boundary Analysis)</h3>")
+                lime_output = gr.Image(show_label=False, interactive=False, elem_classes="xai-image")
 
     # Footer
     with gr.Row():
@@ -325,7 +332,7 @@ with gr.Blocks(theme=custom_theme, title="Sugarcane Disease AI", css=css) as dem
     submit_btn.click(
         fn=predict_gradio,
         inputs=[img_input, enable_lime_checkbox],
-        outputs=[top_pred_output, other_preds, cam_output, lime_col, lime_output]
+        outputs=[top_pred_output, other_preds, xai_section, cam_output, lime_col, lime_output]
     )
 
 if __name__ == "__main__":
