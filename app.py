@@ -6,8 +6,8 @@ from src.pipeline.prediction_pipeline import PredictionPipeline
 import spaces
 import json
 
-# Initialize the pipeline
-pipeline = PredictionPipeline()
+# Initialize the pipeline with heavily optimized LIME samples to save GPU quota
+pipeline = PredictionPipeline(lime_samples=40)
 
 @spaces.GPU(duration=15)
 def predict_gradio(img):
