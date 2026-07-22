@@ -10,7 +10,7 @@ pinned: false
 
 # Sugarcane Leaf Disease Detection
 
-**[🚀 Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/tamimystic/sugercane-leaf-disease-ditection)**
+**[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/tamimystic/sugercane-leaf-disease-ditection)**
 
 This project is a deep learning-based diagnostic application for identifying sugarcane leaf diseases. Built with PyTorch and FastAPI, it classifies 15 different leaf conditions and provides transparent results using Explainable AI (XAI) techniques.
 
